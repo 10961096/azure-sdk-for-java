@@ -3,35 +3,42 @@
 
 package com.azure.digitaltwins.core;
 
-import com.azure.core.credential.TokenCredential;
+import com.azure.core.annotation.ServiceClient;
 import com.azure.core.http.HttpPipeline;
-import com.azure.core.http.HttpPipelineBuilder;
-import com.azure.core.http.policy.BearerTokenAuthenticationPolicy;
-import com.azure.core.http.policy.CookiePolicy;
-import com.azure.core.http.policy.RetryPolicy;
-import com.azure.core.http.policy.UserAgentPolicy;
+import com.azure.digitaltwins.core.models.DigitalTwinsGetByIdResponse;
 
+@ServiceClient(builder = DigitalTwinsClientBuilder.class)
 public class DigitalTwinsClient
 {
-    private AzureDigitalTwinsAPI _digitalTwinsApi;
+    private final DigitalTwinsAsyncClient digitalTwinsAsyncClient;
 
-    public DigitalTwinsClient(String host, TokenCredential tokenCredential)
+    DigitalTwinsClient(DigitalTwinsAsyncClient digitalTwinsAsyncClient)
     {
-        AzureDigitalTwinsAPIBuilder builder = new AzureDigitalTwinsAPIBuilder();
-        builder.host(host);
-        HttpPipeline pipeline =
-            new HttpPipelineBuilder()
-                .policies(
-                    new UserAgentPolicy(),
-                    new RetryPolicy(),
-                    new CookiePolicy(),
-                    new BearerTokenAuthenticationPolicy(tokenCredential, String.format("%s/.default", "https://digitaltwins.azure.net")))
-                .build();
+        this.digitalTwinsAsyncClient = digitalTwinsAsyncClient;
+    }
 
-        // TODO: Implement credential scope for digital twins and make a method call to get it.
+    /**
+     * Gets the {@link HttpPipeline} powering this client.
+     *
+     * @return The pipeline.
+     */
+    public HttpPipeline getHttpPipeline() {
+        return digitalTwinsAsyncClient.getHttpPipeline();
+    }
 
-        builder.pipeline(pipeline);
+    /**
+     * Gets the service version the client is using.
+     *
+     * @return the service version the client is using.
+     */
+    public DigitalTwinsServiceVersion getServiceVersion() {
+        return this.digitalTwinsAsyncClient.getServiceVersion();
+    }
 
-        this._digitalTwinsApi = builder.buildClient();
+    // TODO This is just a temporary implementation for test purposes. This should be spruced up/replaced once this API is actually designed
+    public DigitalTwinsGetByIdResponse getDigitalTwin(String digitalTwinId)
+    {
+        // Blocking calls to the async client is the established pattern in track 2 Java SDKs
+        return this.digitalTwinsAsyncClient.getDigitalTwin(digitalTwinId).block();
     }
 }
